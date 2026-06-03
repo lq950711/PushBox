@@ -118,15 +118,23 @@ class SokobanGame {
             
             if (currentMapData[newBoxY] && currentMapData[newBoxY][newBoxX] === TILE_TYPES.CHANNEL) {
                 // Box pushed onto channel - activate passage
-                // 玩家和箱子保持相对位置，穿过通道到下半场
+                // 玩家和箱子都穿过通道到下半场，保持相对位置
                 const playerRelX = this.playerPos.x - boxX;
                 const playerRelY = this.playerPos.y - boxY;
                 
-                this.boxPos.x = newBoxX;
-                this.boxPos.y = newBoxY + HALF_HEIGHT;  // 转换到下半场
+                // 玩家先穿梭到推动位置（新箱子位置）
+                this.playerPos.x = newBoxX;
+                this.playerPos.y = newBoxY;
                 
-                this.playerPos.x = newBoxX + playerRelX;
-                this.playerPos.y = newBoxY + playerRelY + HALF_HEIGHT;  // 转换到下半场
+                // 箱子穿梭到下半场的对应位置
+                this.boxPos.x = newBoxX + direction.x;
+                this.boxPos.y = newBoxY + direction.y + HALF_HEIGHT;  // 转换到下半场
+                
+                // 检查穿梭后玩家位置是否有效
+                const playerTargetY = this.playerPos.y + HALF_HEIGHT;
+                if (this.isWalkable(this.playerPos.x, playerTargetY, false)) {
+                    this.playerPos.y = playerTargetY;
+                }
                 
                 // Check if box reached goal
                 const targetMap = this.mapBottom;
@@ -140,16 +148,19 @@ class SokobanGame {
                 // Normal box movement
                 this.boxPos.x = newBoxX;
                 this.boxPos.y = newBoxY;
+                // Move player
+                this.playerPos.x = boxX;
+                this.playerPos.y = boxY;
             }
         } else {
             // Normal box movement in bottom half
             this.boxPos.x = newBoxX;
             this.boxPos.y = newBoxY;
+            // Move player
+            this.playerPos.x = boxX;
+            this.playerPos.y = boxY;
         }
 
-        // Move player
-        this.playerPos.x = boxX;
-        this.playerPos.y = boxY;
         this.moveCount++;
         this.render();
     }
