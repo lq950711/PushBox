@@ -25,7 +25,7 @@
             border-radius: 15px;
             padding: 20px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 900px;
+            max-width: 600px;
             width: 100%;
         }
 
@@ -101,28 +101,13 @@
 
         .game-wrapper {
             display: flex;
-            gap: 20px;
             justify-content: center;
             margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-
-        .game-half {
-            flex: 1;
-            min-width: 300px;
-        }
-
-        .game-half h3 {
-            text-align: center;
-            margin-bottom: 10px;
-            font-size: 14px;
-            color: #666;
         }
 
         canvas {
             border: 3px solid #333;
             display: block;
-            margin: 0 auto;
             background: white;
             border-radius: 8px;
         }
@@ -200,6 +185,13 @@
             display: block;
         }
 
+        .divider {
+            text-align: center;
+            margin: 5px 0;
+            color: #999;
+            font-size: 12px;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 15px;
@@ -207,10 +199,6 @@
 
             .header h1 {
                 font-size: 24px;
-            }
-
-            .game-wrapper {
-                flex-direction: column;
             }
 
             canvas {
@@ -240,7 +228,7 @@
             <p>• 使用 <strong>方向键</strong> 或 <strong>WASD</strong> 移动玩家</p>
             <p>• 推动箱子到达机关地块时，箱子会传送到下半场</p>
             <p>• 目标是将箱子推到下半场的目标位置</p>
-            <p>• 上下两个画布显示游戏的两个半场</p>
+            <p>• 🌅 上方是出生地，🌙 下方是目标地</p>
         </div>
 
         <div class="game-info">
@@ -259,14 +247,7 @@
         </div>
 
         <div class="game-wrapper">
-            <div class="game-half">
-                <h3>🌅 上半场 (出生地)</h3>
-                <canvas id="gameCanvasTop" width="300" height="300"></canvas>
-            </div>
-            <div class="game-half">
-                <h3>🌙 下半场 (目标地)</h3>
-                <canvas id="gameCanvasBottom" width="300" height="300"></canvas>
-            </div>
+            <canvas id="gameCanvas" width="300" height="600"></canvas>
         </div>
 
         <div class="button-group">
