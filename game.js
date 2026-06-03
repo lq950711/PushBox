@@ -32,11 +32,10 @@ class SokobanGame {
         this.boxPos = { x: 0, y: 0 };
         this.mapTop = [];
         this.mapBottom = [];
-        this.portalPairs = []; // Array of { topPos, bottomPos }
+        this.portalPairs = [];
         
         this.setupEventListeners();
         this.loadLevel(1);
-        this.render();
     }
 
     setupEventListeners() {
@@ -187,11 +186,11 @@ class SokobanGame {
         this.showMessage('', 'info');
         
         const levelData = this.getLevelData(levelNum);
-        this.mapTop = levelData.mapTop;
-        this.mapBottom = levelData.mapBottom;
+        this.mapTop = JSON.parse(JSON.stringify(levelData.mapTop));
+        this.mapBottom = JSON.parse(JSON.stringify(levelData.mapBottom));
         this.playerPos = { ...levelData.playerPos };
         this.boxPos = { ...levelData.boxPos };
-        this.portalPairs = levelData.portalPairs;
+        this.portalPairs = JSON.parse(JSON.stringify(levelData.portalPairs));
 
         document.getElementById('levelDisplay').textContent = levelNum;
         document.getElementById('moveCount').textContent = '0';
@@ -199,7 +198,6 @@ class SokobanGame {
     }
 
     getLevelData(level) {
-        // Level data format: mapTop, mapBottom, playerPos, boxPos, portalPairs
         const levels = {
             1: {
                 mapTop: [
@@ -280,36 +278,56 @@ class SokobanGame {
         const canvasWidth = this.canvas.width;
         const canvasHeight = this.canvas.height;
         
-        // Clear canvas
+        // Clear canvas with light background
         this.ctx.fillStyle = '#f8f9fa';
         this.ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
-        // Draw top half (rows 0-2)
+        // Draw top half (rows 0-2) with warm colors
         for (let y = 0; y < HALF_SIZE; y++) {
             for (let x = 0; x < GRID_SIZE; x++) {
-                this.drawTile(x, y, this.mapTop[y][x], true, cellSize);
+                const px = x * cellSize;
+                const py = y * cellSize;
+                
+                // Background
+                this.ctx.fillStyle = '#ffd4a3';
+                this.ctx.fillRect(px, py, cellSize, cellSize);
+                
+                // Grid lines
+                this.ctx.strokeStyle = '#ccc';
+                this.ctx.lineWidth = 1;
+                this.ctx.strokeRect(px, py, cellSize, cellSize);
+                
+                // Tile content
+                this.drawTileContent(px, py, this.mapTop[y][x], true, cellSize);
             }
         }
 
         // Draw divider line
-        this.ctx.strokeStyle = '#666';
+        const dividerY = cellSize * HALF_SIZE;
+        this.ctx.strokeStyle = '#333';
         this.ctx.lineWidth = 3;
         this.ctx.beginPath();
-        this.ctx.moveTo(0, cellSize * HALF_SIZE);
-        this.ctx.lineTo(canvasWidth, cellSize * HALF_SIZE);
+        this.ctx.moveTo(0, dividerY);
+        this.ctx.lineTo(canvasWidth, dividerY);
         this.ctx.stroke();
 
-        // Draw divider label
-        this.ctx.fillStyle = '#666';
-        this.ctx.font = 'bold 12px Arial';
-        this.ctx.textAlign = 'center';
-        this.ctx.fillText('🌙 下半场', canvasWidth / 2, cellSize * HALF_SIZE + 15);
-
-        // Draw bottom half (rows 3-5, displayed as rows 0-2 on canvas)
+        // Draw bottom half (rows 0-2 of mapBottom) with cool colors
         for (let y = 0; y < HALF_SIZE; y++) {
             for (let x = 0; x < GRID_SIZE; x++) {
-                const canvasY = y + HALF_SIZE;
-                this.drawTileAtPosition(x, canvasY, this.mapBottom[y][x], false, cellSize);
+                const px = x * cellSize;
+                const py = dividerY + y * cellSize;
+                
+                // Background
+                this.ctx.fillStyle = '#a8d5ff';
+                this.ctx.fillRect(px, py, cellSize, cellSize);
+                
+                // Grid lines
+                this.ctx.strokeStyle = '#ccc';
+                this.ctx.lineWidth = 1;
+                this.ctx.strokeRect(px, py, cellSize, cellSize);
+                
+                // Tile content
+                this.drawTileContent(px, py, this.mapBottom[y][x], false, cellSize);
             }
         }
 
@@ -318,46 +336,6 @@ class SokobanGame {
 
         // Draw player
         this.drawPlayer(cellSize);
-    }
-
-    drawTile(x, y, tileType, isTopHalf, cellSize) {
-        const px = x * cellSize;
-        const py = y * cellSize;
-
-        // Background based on half
-        if (isTopHalf) {
-            this.ctx.fillStyle = '#ffd4a3'; // Warm color for top half
-        } else {
-            this.ctx.fillStyle = '#a8d5ff'; // Cool color for bottom half
-        }
-        this.ctx.fillRect(px, py, cellSize, cellSize);
-
-        // Draw grid lines
-        this.ctx.strokeStyle = '#ccc';
-        this.ctx.lineWidth = 1;
-        this.ctx.strokeRect(px, py, cellSize, cellSize);
-
-        this.drawTileContent(px, py, tileType, isTopHalf, cellSize);
-    }
-
-    drawTileAtPosition(x, canvasY, tileType, isTopHalf, cellSize) {
-        const px = x * cellSize;
-        const py = canvasY * cellSize;
-
-        // Background based on half
-        if (isTopHalf) {
-            this.ctx.fillStyle = '#ffd4a3'; // Warm color for top half
-        } else {
-            this.ctx.fillStyle = '#a8d5ff'; // Cool color for bottom half
-        }
-        this.ctx.fillRect(px, py, cellSize, cellSize);
-
-        // Draw grid lines
-        this.ctx.strokeStyle = '#ccc';
-        this.ctx.lineWidth = 1;
-        this.ctx.strokeRect(px, py, cellSize, cellSize);
-
-        this.drawTileContent(px, py, tileType, isTopHalf, cellSize);
     }
 
     drawTileContent(px, py, tileType, isTopHalf, cellSize) {
@@ -436,7 +414,8 @@ class SokobanGame {
         document.getElementById('moveCount').textContent = this.moveCount;
         
         const boxHalf = this.boxPos.y < HALF_SIZE ? '上' : '下';
-        document.getElementById('boxPosition').textContent = `(${this.boxPos.x}, ${this.boxPos.y % HALF_SIZE}) - ${boxHalf}半`;
+        const boxRow = this.boxPos.y < HALF_SIZE ? this.boxPos.y : this.boxPos.y - HALF_SIZE;
+        document.getElementById('boxPosition').textContent = `(${this.boxPos.x}, ${boxRow}) - ${boxHalf}半`;
     }
 
     resetLevel() {
