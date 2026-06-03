@@ -1,6 +1,7 @@
 // Game Constants
-const GRID_SIZE = 6;
-const HALF_SIZE = 3;
+const GRID_WIDTH = 5;
+const GRID_HEIGHT = 6;
+const HALF_HEIGHT = 3;
 const CELL_SIZE = 50;
 const TILE_TYPES = {
     EMPTY: 0,
@@ -79,7 +80,7 @@ class SokobanGame {
         const newX = this.playerPos.x + direction.x;
         const newY = this.playerPos.y + direction.y;
 
-        const isTopHalf = this.playerPos.y < HALF_SIZE;
+        const isTopHalf = this.playerPos.y < HALF_HEIGHT;
 
         // Check if new position is walkable
         if (!this.isWalkable(newX, newY, isTopHalf)) {
@@ -88,7 +89,7 @@ class SokobanGame {
 
         // Check if there's a box at the new position
         if (this.boxPos.x === newX && this.boxPos.y === newY && 
-            ((this.boxPos.y < HALF_SIZE) === isTopHalf)) {
+            ((this.boxPos.y < HALF_HEIGHT) === isTopHalf)) {
             // Try to push the box
             this.pushBox(newX, newY, direction, isTopHalf);
             return;
@@ -113,7 +114,7 @@ class SokobanGame {
 
         // Check for portal
         const currentMapData = fromTopHalf ? this.mapTop : this.mapBottom;
-        const mapY = fromTopHalf ? newBoxY : newBoxY - HALF_SIZE;
+        const mapY = fromTopHalf ? newBoxY : newBoxY - HALF_HEIGHT;
         
         if (currentMapData[mapY] && currentMapData[mapY][newBoxX] === TILE_TYPES.PORTAL) {
             // Box is on portal, teleport it
@@ -128,7 +129,7 @@ class SokobanGame {
 
                 // Check if box reached goal
                 const targetMap = !fromTopHalf ? this.mapTop : this.mapBottom;
-                const targetMapY = !fromTopHalf ? this.boxPos.y : this.boxPos.y - HALF_SIZE;
+                const targetMapY = !fromTopHalf ? this.boxPos.y : this.boxPos.y - HALF_HEIGHT;
                 if (targetMap[targetMapY] && targetMap[targetMapY][this.boxPos.x] === TILE_TYPES.GOAL) {
                     this.gameWon = true;
                     this.showMessage(`🎉 恭喜！关卡 ${this.currentLevel} 完成！用时 ${this.moveCount} 步`, 'success');
@@ -162,17 +163,17 @@ class SokobanGame {
     }
 
     isWalkable(x, y, isTopHalf) {
-        if (x < 0 || x >= GRID_SIZE) return false;
+        if (x < 0 || x >= GRID_WIDTH) return false;
         
         const currentMap = isTopHalf ? this.mapTop : this.mapBottom;
         
         if (isTopHalf) {
-            if (y < 0 || y >= HALF_SIZE) return false;
+            if (y < 0 || y >= HALF_HEIGHT) return false;
             const tile = currentMap[y][x];
             return tile !== TILE_TYPES.WALL;
         } else {
-            if (y < HALF_SIZE || y >= GRID_SIZE) return false;
-            const adjustedY = y - HALF_SIZE;
+            if (y < HALF_HEIGHT || y >= GRID_HEIGHT) return false;
+            const adjustedY = y - HALF_HEIGHT;
             const tile = currentMap[adjustedY][x];
             return tile !== TILE_TYPES.WALL;
         }
@@ -200,66 +201,75 @@ class SokobanGame {
     getLevelData(level) {
         const levels = {
             1: {
+                // 关卡1：简单的传送
+                // 上半场：玩家在左，箱子在中间，传送门在右
                 mapTop: [
-                    [1, 1, 1, 1, 1, 1],
-                    [1, 2, 2, 2, 2, 1],
-                    [1, 2, 2, 3, 2, 1]
+                    [1, 1, 1, 1, 1],
+                    [1, 2, 2, 3, 1],
+                    [1, 2, 2, 2, 1]
                 ],
+                // 下半场：传送门在左，目标在右
                 mapBottom: [
-                    [1, 2, 2, 3, 2, 1],
-                    [1, 2, 2, 2, 2, 1],
-                    [1, 1, 1, 4, 1, 1]
+                    [1, 3, 2, 2, 1],
+                    [1, 2, 2, 2, 1],
+                    [1, 1, 1, 4, 1]
                 ],
                 playerPos: { x: 1, y: 1 },
                 boxPos: { x: 2, y: 1 },
                 portalPairs: [
                     {
-                        topPos: { x: 3, y: 2 },
-                        bottomPos: { x: 3, y: 3 }
+                        topPos: { x: 3, y: 1 },
+                        bottomPos: { x: 1, y: 0 }
                     }
                 ]
             },
             2: {
+                // 关卡2：需要往下推箱子到传送门
+                // 上半场：玩家在上，箱子在中间，传送门在下
                 mapTop: [
-                    [1, 1, 1, 1, 1, 1],
-                    [1, 2, 3, 2, 2, 1],
-                    [1, 2, 2, 2, 2, 1]
+                    [1, 1, 1, 1, 1],
+                    [1, 2, 2, 2, 1],
+                    [1, 2, 3, 2, 1]
                 ],
+                // 下半场：传送门在上，目标在下方
                 mapBottom: [
-                    [1, 2, 2, 3, 2, 1],
-                    [1, 2, 2, 2, 2, 1],
-                    [1, 1, 4, 2, 1, 1]
+                    [1, 3, 2, 2, 1],
+                    [1, 2, 2, 2, 1],
+                    [1, 2, 2, 4, 1]
                 ],
                 playerPos: { x: 1, y: 1 },
-                boxPos: { x: 3, y: 1 },
+                boxPos: { x: 2, y: 1 },
                 portalPairs: [
                     {
-                        topPos: { x: 2, y: 1 },
-                        bottomPos: { x: 3, y: 3 }
+                        topPos: { x: 2, y: 2 },
+                        bottomPos: { x: 1, y: 0 }
                     }
                 ]
             },
             3: {
+                // 关卡3：双传送门，复杂路线
+                // 上半场：两个传送门
                 mapTop: [
-                    [1, 1, 1, 1, 1, 1],
-                    [1, 2, 2, 2, 3, 1],
-                    [1, 3, 2, 2, 2, 1]
+                    [1, 1, 1, 1, 1],
+                    [1, 2, 3, 2, 1],
+                    [1, 2, 2, 3, 1]
                 ],
+                // 下半场：对应的两个传送门和目标
                 mapBottom: [
-                    [1, 2, 3, 2, 2, 1],
-                    [1, 2, 2, 2, 2, 1],
-                    [1, 1, 2, 4, 2, 1]
+                    [1, 3, 2, 2, 1],
+                    [1, 2, 2, 3, 1],
+                    [1, 2, 2, 4, 1]
                 ],
                 playerPos: { x: 1, y: 1 },
-                boxPos: { x: 3, y: 2 },
+                boxPos: { x: 2, y: 1 },
                 portalPairs: [
                     {
-                        topPos: { x: 4, y: 1 },
-                        bottomPos: { x: 2, y: 3 }
+                        topPos: { x: 2, y: 1 },
+                        bottomPos: { x: 1, y: 0 }
                     },
                     {
-                        topPos: { x: 1, y: 2 },
-                        bottomPos: { x: 3, y: 3 }
+                        topPos: { x: 3, y: 2 },
+                        bottomPos: { x: 3, y: 1 }
                     }
                 ]
             }
@@ -278,13 +288,13 @@ class SokobanGame {
         const canvasWidth = this.canvas.width;
         const canvasHeight = this.canvas.height;
         
-        // Clear canvas with light background
+        // Clear canvas
         this.ctx.fillStyle = '#f8f9fa';
         this.ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
-        // Draw top half (rows 0-2) with warm colors
-        for (let y = 0; y < HALF_SIZE; y++) {
-            for (let x = 0; x < GRID_SIZE; x++) {
+        // Draw top half
+        for (let y = 0; y < HALF_HEIGHT; y++) {
+            for (let x = 0; x < GRID_WIDTH; x++) {
                 const px = x * cellSize;
                 const py = y * cellSize;
                 
@@ -303,7 +313,7 @@ class SokobanGame {
         }
 
         // Draw divider line
-        const dividerY = cellSize * HALF_SIZE;
+        const dividerY = cellSize * HALF_HEIGHT;
         this.ctx.strokeStyle = '#333';
         this.ctx.lineWidth = 3;
         this.ctx.beginPath();
@@ -311,9 +321,9 @@ class SokobanGame {
         this.ctx.lineTo(canvasWidth, dividerY);
         this.ctx.stroke();
 
-        // Draw bottom half (rows 0-2 of mapBottom) with cool colors
-        for (let y = 0; y < HALF_SIZE; y++) {
-            for (let x = 0; x < GRID_SIZE; x++) {
+        // Draw bottom half
+        for (let y = 0; y < HALF_HEIGHT; y++) {
+            for (let x = 0; x < GRID_WIDTH; x++) {
                 const px = x * cellSize;
                 const py = dividerY + y * cellSize;
                 
@@ -413,8 +423,8 @@ class SokobanGame {
     updateUI() {
         document.getElementById('moveCount').textContent = this.moveCount;
         
-        const boxHalf = this.boxPos.y < HALF_SIZE ? '上' : '下';
-        const boxRow = this.boxPos.y < HALF_SIZE ? this.boxPos.y : this.boxPos.y - HALF_SIZE;
+        const boxHalf = this.boxPos.y < HALF_HEIGHT ? '上' : '下';
+        const boxRow = this.boxPos.y < HALF_HEIGHT ? this.boxPos.y : this.boxPos.y - HALF_HEIGHT;
         document.getElementById('boxPosition').textContent = `(${this.boxPos.x}, ${boxRow}) - ${boxHalf}半`;
     }
 
