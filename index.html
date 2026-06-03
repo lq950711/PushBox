@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>传送推箱子 - Sokoban</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .info-item {
+            background: #f5f5f5;
+            padding: 10px 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .info-item label {
+            display: block;
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .info-item span {
+            display: block;
+            font-size: 18px;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .level-selector {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .level-btn {
+            padding: 10px 20px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .level-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .level-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .game-wrapper {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .game-half {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .game-half h3 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        canvas {
+            border: 3px solid #333;
+            display: block;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+        }
+
+        .controls {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .controls h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .controls p {
+            color: #666;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .btn-reset {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .btn-reset:hover {
+            background: #ff5252;
+        }
+
+        .btn-next {
+            background: #51cf66;
+            color: white;
+        }
+
+        .btn-next:hover {
+            background: #40c057;
+        }
+
+        .game-message {
+            text-align: center;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-weight: bold;
+            display: none;
+        }
+
+        .game-message.success {
+            background: #d3f9d8;
+            color: #2f9e44;
+            display: block;
+        }
+
+        .game-message.info {
+            background: #d0ebff;
+            color: #1971c2;
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .game-wrapper {
+                flex-direction: column;
+            }
+
+            canvas {
+                max-width: 100%;
+                height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎮 传送推箱子游戏</h1>
+            <p>Push the box through the portal to reach the goal!</p>
+        </div>
+
+        <div class="level-selector">
+            <button class="level-btn active" data-level="1">关卡 1 - 入门</button>
+            <button class="level-btn" data-level="2">关卡 2 - 进阶</button>
+            <button class="level-btn" data-level="3">关卡 3 - 挑战</button>
+        </div>
+
+        <div class="game-message" id="gameMessage"></div>
+
+        <div class="controls">
+            <h3>📖 游戏说明</h3>
+            <p>• 使用 <strong>方向键</strong> 或 <strong>WASD</strong> 移动玩家</p>
+            <p>• 推动箱子到达机关地块时，箱子会传送到下半场</p>
+            <p>• 目标是将箱子推到下半场的目标位置</p>
+            <p>• 上下两个画布显示游戏的两个半场</p>
+        </div>
+
+        <div class="game-info">
+            <div class="info-item">
+                <label>关卡</label>
+                <span id="levelDisplay">1</span>
+            </div>
+            <div class="info-item">
+                <label>步数</label>
+                <span id="moveCount">0</span>
+            </div>
+            <div class="info-item">
+                <label>箱子位置</label>
+                <span id="boxPosition">-</span>
+            </div>
+        </div>
+
+        <div class="game-wrapper">
+            <div class="game-half">
+                <h3>🌅 上半场 (出生地)</h3>
+                <canvas id="gameCanvasTop" width="300" height="300"></canvas>
+            </div>
+            <div class="game-half">
+                <h3>🌙 下半场 (目标地)</h3>
+                <canvas id="gameCanvasBottom" width="300" height="300"></canvas>
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button class="btn btn-reset" onclick="game.resetLevel()">🔄 重置关卡</button>
+            <button class="btn btn-next" onclick="game.nextLevel()" id="nextLevelBtn" style="display: none;">⏭️ 下一关</button>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
