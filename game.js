@@ -7,7 +7,7 @@ const TILE_TYPES = {
     EMPTY: 0,
     WALL: 1,
     FLOOR: 2,
-    PORTAL: 3,
+    CHANNEL: 3,  // 改名为通道
     GOAL: 4
 };
 
@@ -33,7 +33,7 @@ class SokobanGame {
         this.boxPos = { x: 0, y: 0 };
         this.mapTop = [];
         this.mapBottom = [];
-        this.portalPairs = [];
+        this.channelPos = null; // 上半场的通道位置
         
         this.setupEventListeners();
         this.loadLevel(1);
@@ -112,32 +112,37 @@ class SokobanGame {
             return;
         }
 
-        // Check for portal
-        const currentMapData = fromTopHalf ? this.mapTop : this.mapBottom;
-        const mapY = fromTopHalf ? newBoxY : newBoxY - HALF_HEIGHT;
-        
-        if (currentMapData[mapY] && currentMapData[mapY][newBoxX] === TILE_TYPES.PORTAL) {
-            // Box is on portal, teleport it
-            const portalIndex = this.getPortalIndex(newBoxX, newBoxY, fromTopHalf);
-            if (portalIndex !== -1) {
-                const otherPortal = fromTopHalf ? 
-                    this.portalPairs[portalIndex].bottomPos : 
-                    this.portalPairs[portalIndex].topPos;
+        // Check for channel (only in top half)
+        if (fromTopHalf) {
+            const currentMapData = this.mapTop;
+            
+            if (currentMapData[newBoxY] && currentMapData[newBoxY][newBoxX] === TILE_TYPES.CHANNEL) {
+                // Box pushed onto channel - activate passage
+                // 玩家和箱子保持相对位置，穿过通道到下半场
+                const playerRelX = this.playerPos.x - boxX;
+                const playerRelY = this.playerPos.y - boxY;
                 
-                this.boxPos.x = otherPortal.x;
-                this.boxPos.y = otherPortal.y;
-
+                this.boxPos.x = newBoxX;
+                this.boxPos.y = newBoxY + HALF_HEIGHT;  // 转换到下半场
+                
+                this.playerPos.x = newBoxX + playerRelX;
+                this.playerPos.y = newBoxY + playerRelY + HALF_HEIGHT;  // 转换到下半场
+                
                 // Check if box reached goal
-                const targetMap = !fromTopHalf ? this.mapTop : this.mapBottom;
-                const targetMapY = !fromTopHalf ? this.boxPos.y : this.boxPos.y - HALF_HEIGHT;
+                const targetMap = this.mapBottom;
+                const targetMapY = this.boxPos.y - HALF_HEIGHT;
                 if (targetMap[targetMapY] && targetMap[targetMapY][this.boxPos.x] === TILE_TYPES.GOAL) {
                     this.gameWon = true;
                     this.showMessage(`🎉 恭喜！关卡 ${this.currentLevel} 完成！用时 ${this.moveCount} 步`, 'success');
                     document.getElementById('nextLevelBtn').style.display = this.currentLevel < 3 ? 'block' : 'none';
                 }
+            } else {
+                // Normal box movement
+                this.boxPos.x = newBoxX;
+                this.boxPos.y = newBoxY;
             }
         } else {
-            // Normal box movement
+            // Normal box movement in bottom half
             this.boxPos.x = newBoxX;
             this.boxPos.y = newBoxY;
         }
@@ -147,19 +152,6 @@ class SokobanGame {
         this.playerPos.y = boxY;
         this.moveCount++;
         this.render();
-    }
-
-    getPortalIndex(x, y, isTopHalf) {
-        for (let i = 0; i < this.portalPairs.length; i++) {
-            if (isTopHalf) {
-                const pos = this.portalPairs[i].topPos;
-                if (pos.x === x && pos.y === y) return i;
-            } else {
-                const pos = this.portalPairs[i].bottomPos;
-                if (pos.x === x && pos.y === y) return i;
-            }
-        }
-        return -1;
     }
 
     isWalkable(x, y, isTopHalf) {
@@ -191,7 +183,7 @@ class SokobanGame {
         this.mapBottom = JSON.parse(JSON.stringify(levelData.mapBottom));
         this.playerPos = { ...levelData.playerPos };
         this.boxPos = { ...levelData.boxPos };
-        this.portalPairs = JSON.parse(JSON.stringify(levelData.portalPairs));
+        this.channelPos = levelData.channelPos;
 
         document.getElementById('levelDisplay').textContent = levelNum;
         document.getElementById('moveCount').textContent = '0';
@@ -201,77 +193,49 @@ class SokobanGame {
     getLevelData(level) {
         const levels = {
             1: {
-                // 关卡1：简单的传送
-                // 上半场：玩家在左，箱子在中间，传送门在右
                 mapTop: [
                     [1, 1, 1, 1, 1],
                     [1, 2, 2, 3, 1],
                     [1, 2, 2, 2, 1]
                 ],
-                // 下半场：传送门在左，目标在右
                 mapBottom: [
-                    [1, 3, 2, 2, 1],
+                    [1, 2, 2, 2, 1],
                     [1, 2, 2, 2, 1],
                     [1, 1, 1, 4, 1]
                 ],
                 playerPos: { x: 1, y: 1 },
                 boxPos: { x: 2, y: 1 },
-                portalPairs: [
-                    {
-                        topPos: { x: 3, y: 1 },
-                        bottomPos: { x: 1, y: 0 }
-                    }
-                ]
+                channelPos: { x: 3, y: 1 }
             },
             2: {
-                // 关卡2：需要往下推箱子到传送门
-                // 上半场：玩家在上，箱子在中间，传送门在下
                 mapTop: [
                     [1, 1, 1, 1, 1],
                     [1, 2, 2, 2, 1],
                     [1, 2, 3, 2, 1]
                 ],
-                // 下半场：传送门在上，目标在下方
                 mapBottom: [
-                    [1, 3, 2, 2, 1],
                     [1, 2, 2, 2, 1],
-                    [1, 2, 2, 4, 1]
+                    [1, 2, 2, 2, 1],
+                    [1, 1, 1, 4, 1]
                 ],
                 playerPos: { x: 1, y: 1 },
                 boxPos: { x: 2, y: 1 },
-                portalPairs: [
-                    {
-                        topPos: { x: 2, y: 2 },
-                        bottomPos: { x: 1, y: 0 }
-                    }
-                ]
+                channelPos: { x: 2, y: 2 }
             },
             3: {
-                // 关卡3：双传送门，复杂路线
-                // 上半场：两个传送门
                 mapTop: [
                     [1, 1, 1, 1, 1],
-                    [1, 2, 3, 2, 1],
-                    [1, 2, 2, 3, 1]
+                    [1, 2, 2, 2, 1],
+                    [1, 2, 3, 2, 1]
                 ],
-                // 下半场：对应的两个传送门和目标
                 mapBottom: [
-                    [1, 3, 2, 2, 1],
-                    [1, 2, 2, 3, 1],
-                    [1, 2, 2, 4, 1]
+                    [1, 2, 2, 2, 1],
+                    [1, 2, 2, 2, 1],
+                    [1, 1, 1, 4, 1]
                 ],
                 playerPos: { x: 1, y: 1 },
                 boxPos: { x: 2, y: 1 },
-                portalPairs: [
-                    {
-                        topPos: { x: 2, y: 1 },
-                        bottomPos: { x: 1, y: 0 }
-                    },
-                    {
-                        topPos: { x: 3, y: 2 },
-                        bottomPos: { x: 3, y: 1 }
-                    }
-                ]
+                channelPos: { x: 2, y: 2 }
             }
         };
 
@@ -355,7 +319,7 @@ class SokobanGame {
                 this.ctx.fillRect(px + 2, py + 2, cellSize - 4, cellSize - 4);
                 break;
             
-            case TILE_TYPES.PORTAL:
+            case TILE_TYPES.CHANNEL:
                 this.ctx.fillStyle = isTopHalf ? '#ffaa00' : '#00aaff';
                 this.ctx.beginPath();
                 this.ctx.arc(px + cellSize / 2, py + cellSize / 2, cellSize / 3, 0, Math.PI * 2);
